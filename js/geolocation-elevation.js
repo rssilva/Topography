@@ -24,7 +24,7 @@ var plotMap = function () {
 }
 
 var addPoints = function (point) {
-
+	
 	var circles = 5,
 		markersArray = [],
 		circleRadiusIncrement = 0.002,
@@ -34,11 +34,12 @@ var addPoints = function (point) {
 		currentAngle = 0,
 		initialAngle = 0,
 		currentLatitude = 0,
-		currentLongitude = 0;
+		currentLongitude = 0, 
+		pointLatLng,
+		periphericalPoint;
 	
-
-	var myLatlng = new google.maps.LatLng(point.jb, point.kb);
-	markersArray.push(myLatlng);
+	pointLatLng = new google.maps.LatLng(point.lat(), point.lng());
+	markersArray.push(pointLatLng);
 
 	for (var i = 0, len = pointsPerCircle.length; i < len; i++) {
 		currentCircleRadius += circleRadiusIncrement;
@@ -52,11 +53,11 @@ var addPoints = function (point) {
 		for (var j = 0, len2 = pointsPerCircle[i]; j < len2; j++) {
 			currentAngle += currentAngleIncrement;
 
-			currentLatitude = point.jb + (currentCircleRadius) * Math.cos(currentAngle);
-			currentLongitude = point.kb + (currentCircleRadius) * Math.sin(currentAngle);
+			currentLatitude = point.lat() + (currentCircleRadius) * Math.cos(currentAngle);
+			currentLongitude = point.lng() + (currentCircleRadius) * Math.sin(currentAngle);
 
-			var myLatlng = new google.maps.LatLng(currentLatitude, currentLongitude);
-			markersArray.push(myLatlng)
+			periphericalPoint = new google.maps.LatLng(currentLatitude, currentLongitude);
+			markersArray.push(periphericalPoint);
 		}
 	}
 
@@ -64,10 +65,11 @@ var addPoints = function (point) {
 }
 
 var getInfo = function (points) {
-	var locations = '';
+	var locations = '',
+		pointsUrl
 
 	for (var i = 0, len = points.length; i < len; i++) {
-		locations += points[i].jb + ',' + points[i].kb;
+		locations += points[i].lat() + ',' + points[i].lng();
 
 		if (i !== points.length - 1) {
 			locations += '|';
@@ -76,13 +78,15 @@ var getInfo = function (points) {
 
 	locations += '&sensor=false';
 
-	var url = 'http://maps.googleapis.com/maps/api/elevation/json?locations=' + locations;
+	pointsUrl = 'http://maps.googleapis.com/maps/api/elevation/json?locations=' + locations;
 	
-
 	$.ajax({
-		type: 'GET',
-		url: url,
-		dataType: 'json',   
+		type: 'POST',
+		url: 'getPointsData.php',
+		data: {
+			url: pointsUrl
+		},
+		dataType: 'json',
 		success: function(data){
 			plotElevationPoints(data);
 		}
