@@ -3,7 +3,10 @@ var myMap = null;
 var pointsArray = ['p1.png', 'p2.png', 'p3.png', 'p4.png', 'p5.png', 'p6.png', 'p7.png', 'p8.png',
 		'p9.png', 'p10.png', 'p11.png', 'p12.png', 'p13.png'];
 
+var body;
+
 window.onload = function () {
+	body = $('body');
 	plotMap();
 }
 
@@ -24,7 +27,7 @@ var plotMap = function () {
 }
 
 var addPoints = function (point) {
-
+	
 	var circles = 5,
 		markersArray = [],
 		circleRadiusIncrement = 0.002,
@@ -34,11 +37,12 @@ var addPoints = function (point) {
 		currentAngle = 0,
 		initialAngle = 0,
 		currentLatitude = 0,
-		currentLongitude = 0;
+		currentLongitude = 0, 
+		pointLatLng,
+		periphericalPoint;
 	
-
-	var myLatlng = new google.maps.LatLng(point.jb, point.kb);
-	markersArray.push(myLatlng);
+	pointLatLng = new google.maps.LatLng(point.lat(), point.lng());
+	markersArray.push(pointLatLng);
 
 	for (var i = 0, len = pointsPerCircle.length; i < len; i++) {
 		currentCircleRadius += circleRadiusIncrement;
@@ -52,11 +56,11 @@ var addPoints = function (point) {
 		for (var j = 0, len2 = pointsPerCircle[i]; j < len2; j++) {
 			currentAngle += currentAngleIncrement;
 
-			currentLatitude = point.jb + (currentCircleRadius) * Math.cos(currentAngle);
-			currentLongitude = point.kb + (currentCircleRadius) * Math.sin(currentAngle);
+			currentLatitude = point.lat() + (currentCircleRadius) * Math.cos(currentAngle);
+			currentLongitude = point.lng() + (currentCircleRadius) * Math.sin(currentAngle);
 
-			var myLatlng = new google.maps.LatLng(currentLatitude, currentLongitude);
-			markersArray.push(myLatlng)
+			periphericalPoint = new google.maps.LatLng(currentLatitude, currentLongitude);
+			markersArray.push(periphericalPoint);
 		}
 	}
 
@@ -64,10 +68,11 @@ var addPoints = function (point) {
 }
 
 var getInfo = function (points) {
-	var locations = '';
+	var locations = '',
+		pointsUrl
 
 	for (var i = 0, len = points.length; i < len; i++) {
-		locations += points[i].jb + ',' + points[i].kb;
+		locations += points[i].lat() + ',' + points[i].lng();
 
 		if (i !== points.length - 1) {
 			locations += '|';
@@ -76,24 +81,37 @@ var getInfo = function (points) {
 
 	locations += '&sensor=false';
 
-	var url = 'http://maps.googleapis.com/maps/api/elevation/json?locations=' + locations;
+	pointsUrl = 'http://maps.googleapis.com/maps/api/elevation/json?locations=' + locations;
+	pointsUrl = encodeURI(pointsUrl);
+	pointsUrl = pointsUrl.replace('&', '%26');
 	
+	getLocationsData(pointsUrl);
+}
 
-	$.ajax({
-		type: 'GET',
-		url: url,
-		dataType: 'json',   
-		success: function(data){
-			plotElevationPoints(data);
-		}
-	});
+var getLocationsData = function (locations) {
+	var existentScript = $('.data-jsonp'),
+		tag;
+
+	if (existentScript.length !== 0) {
+		existentScript.remove();
+	}
+
+	tag = document.createElement('script');
+	body.append(tag);
+
+	tag.onload = function () {
+		plotElevationPoints(topographyData);
+	}
+	tag.className = 'data-jsonp';
+	tag.src = 'http://dailydevtips.com/post/092/getPointsData.php?url=' + locations;
+
 }
 
 var plotElevationPoints = function (data) {
 	
 	var marker = null, 
 		step = 5,
-		myLatlng = null,
+		markerLatlng = null,
 		index = 0;
 
 	for (var i = 0, len = data.results.length; i < len; i++) {
@@ -101,12 +119,12 @@ var plotElevationPoints = function (data) {
 
 		index = Math.floor(data.results[i].elevation/step);
 		
-		myLatlng = new google.maps.LatLng(data.results[i].location.lat, data.results[i].location.lng);
+		markerLatlng = new google.maps.LatLng(data.results[i].location.lat, data.results[i].location.lng);
 
 		index = index > 12 ? 12 : index;
 
 		marker = new google.maps.Marker({
-	    	position: myLatlng,
+	    	position: markerLatlng,
 	    	icon: 'img/' + pointsArray[index]
 		});
 
