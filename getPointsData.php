@@ -1,7 +1,4 @@
 <?php 
 
-$url = $_POST['url'];
-
-echo file_get_contents($url);
-
-?>
+$url = $_GET['url'];
+echo "var topographyData = ". file_get_contents($url);

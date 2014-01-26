@@ -3,7 +3,10 @@ var myMap = null;
 var pointsArray = ['p1.png', 'p2.png', 'p3.png', 'p4.png', 'p5.png', 'p6.png', 'p7.png', 'p8.png',
 		'p9.png', 'p10.png', 'p11.png', 'p12.png', 'p13.png'];
 
+var body;
+
 window.onload = function () {
+	body = $('body');
 	plotMap();
 }
 
@@ -79,25 +82,36 @@ var getInfo = function (points) {
 	locations += '&sensor=false';
 
 	pointsUrl = 'http://maps.googleapis.com/maps/api/elevation/json?locations=' + locations;
+	pointsUrl = encodeURI(pointsUrl);
+	pointsUrl = pointsUrl.replace('&', '%26');
 	
-	$.ajax({
-		type: 'POST',
-		url: 'getPointsData.php',
-		data: {
-			url: pointsUrl
-		},
-		dataType: 'json',
-		success: function(data){
-			plotElevationPoints(data);
-		}
-	});
+	getLocationsData(pointsUrl);
+}
+
+var getLocationsData = function (locations) {
+	var existentScript = $('.data-jsonp'),
+		tag;
+
+	if (existentScript.length !== 0) {
+		existentScript.remove();
+	}
+
+	tag = document.createElement('script');
+	body.append(tag);
+
+	tag.onload = function () {
+		plotElevationPoints(topographyData);
+	}
+	tag.className = 'data-jsonp';
+	tag.src = 'http://192.168.2.103/Topography/getPointsData.php?url=' + locations;
+
 }
 
 var plotElevationPoints = function (data) {
 	
 	var marker = null, 
 		step = 5,
-		myLatlng = null,
+		markerLatlng = null,
 		index = 0;
 
 	for (var i = 0, len = data.results.length; i < len; i++) {
@@ -105,12 +119,12 @@ var plotElevationPoints = function (data) {
 
 		index = Math.floor(data.results[i].elevation/step);
 		
-		myLatlng = new google.maps.LatLng(data.results[i].location.lat, data.results[i].location.lng);
+		markerLatlng = new google.maps.LatLng(data.results[i].location.lat, data.results[i].location.lng);
 
 		index = index > 12 ? 12 : index;
 
 		marker = new google.maps.Marker({
-	    	position: myLatlng,
+	    	position: markerLatlng,
 	    	icon: 'img/' + pointsArray[index]
 		});
 
